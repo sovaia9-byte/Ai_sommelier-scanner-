@@ -1,0 +1,7 @@
+{
+  "name": "Ai_sommelier ",
+  "description": "An advanced wine scanner and digital sommelier that identifies wine labels and provides deep viticultural insights.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
