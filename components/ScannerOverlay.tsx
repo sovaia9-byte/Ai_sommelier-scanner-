@@ -1,8 +1,10 @@
 
 import React from 'react';
 import { Logo } from './Logo';
+import { AppState } from '../types';
 
 interface ScannerOverlayProps {
+  state: AppState;
   onCapture: () => void;
   onGalleryClick: () => void;
   onOpenCollection: () => void;
@@ -13,6 +15,7 @@ interface ScannerOverlayProps {
 }
 
 export const ScannerOverlay: React.FC<ScannerOverlayProps> = ({ 
+  state,
   onCapture, 
   onGalleryClick, 
   onOpenCollection,
@@ -21,6 +24,8 @@ export const ScannerOverlay: React.FC<ScannerOverlayProps> = ({
   points, 
   isPremium 
 }) => {
+  const isScanning = state === 'scanning';
+
   return (
     <div className="absolute inset-0 z-10 flex flex-col pointer-events-none">
       {/* Header */}
@@ -61,20 +66,22 @@ export const ScannerOverlay: React.FC<ScannerOverlayProps> = ({
         </div>
       </div>
 
-      {/* Main Scanner Frame */}
+      {/* Main Scanner Frame - Only show when actually scanning */}
       <div className="flex-grow flex items-center justify-center relative">
-        <div className="w-64 h-96 relative">
-          <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-amber-500 rounded-tl-xl"></div>
-          <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-amber-500 rounded-tr-xl"></div>
-          <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-amber-500 rounded-bl-xl"></div>
-          <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-amber-500 rounded-br-xl"></div>
-          
-          <div className="absolute inset-0 flex items-center justify-center">
-             <div className="text-amber-500/60 text-[10px] tracking-[0.2em] uppercase font-bold text-center w-full mt-40">
-                {points < 10 && !isPremium ? 'Depleted Points' : 'Frame the vintage'}
-             </div>
+        {isScanning && (
+          <div className="w-64 h-96 relative animate-in fade-in duration-500">
+            <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-amber-500 rounded-tl-xl"></div>
+            <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-amber-500 rounded-tr-xl"></div>
+            <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-amber-500 rounded-bl-xl"></div>
+            <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-amber-500 rounded-br-xl"></div>
+            
+            <div className="absolute inset-0 flex items-center justify-center">
+               <div className="text-amber-500/60 text-[10px] tracking-[0.2em] uppercase font-bold text-center w-full mt-40">
+                  {points < 10 && !isPremium ? 'Depleted Points' : 'Frame the vintage'}
+               </div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Footer Area */}

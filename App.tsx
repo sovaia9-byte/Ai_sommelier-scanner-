@@ -45,7 +45,7 @@ const App: React.FC = () => {
       }
     } catch (err) {
       console.error("Camera access denied", err);
-      setError("Camera access is required for scanning.");
+      setError("CAMERA ACCESS DENIED: Permissions are required to scan vintages.");
       setState('error');
     }
   };
@@ -61,7 +61,7 @@ const App: React.FC = () => {
     if (!videoRef.current || !canvasRef.current) return;
     
     if (!stats.isPremium && stats.points < 10) {
-      setError("Reserve points depleted. Upgrade to Ruby Premium for infinite scan capacity.");
+      setError("RESERVE POINTS DEPLETED: Upgrade to Ruby Premium for infinite scan capacity.");
       setState('error');
       return;
     }
@@ -91,9 +91,9 @@ const App: React.FC = () => {
 
       setWineDetails({ ...details, id: Date.now().toString(), scanDate: new Date().toISOString() });
       setState('results');
-    } catch (err) {
-      console.error(err);
-      setError("Analysis failed. Please ensure the label is adequately illuminated.");
+    } catch (err: any) {
+      console.error("App Process Error:", err);
+      setError(err.message || "ANALYSIS FAILED: The Imperial core encountered an unknown disruption.");
       setState('error');
     }
   };
@@ -163,7 +163,7 @@ const App: React.FC = () => {
             <div className="absolute -inset-10 bg-rose-700/20 blur-3xl rounded-full"></div>
             <Logo className="w-52 h-52 relative z-10" />
           </div>
-          <div className="text-center space-y-4">
+          <div className="text-center space-y-4 px-6">
             <h1 className="text-4xl font-light tracking-[0.4em] uppercase text-amber-500">AI Sommelier</h1>
             <p className="text-rose-400/50 text-[10px] tracking-widest uppercase font-bold">Imperial Viticulture Analysis</p>
           </div>
@@ -193,11 +193,12 @@ const App: React.FC = () => {
             autoPlay
             playsInline
             muted
-            className="absolute inset-0 w-full h-full object-cover grayscale opacity-60"
+            className={`absolute inset-0 w-full h-full object-cover grayscale opacity-60 ${state !== 'scanning' ? 'hidden' : ''}`}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-black/80 pointer-events-none" />
           
           <ScannerOverlay 
+            state={state}
             onCapture={handleCapture}
             onGalleryClick={() => fileInputRef.current?.click()}
             onOpenCollection={() => setState('collection')}
@@ -213,9 +214,10 @@ const App: React.FC = () => {
                 <Logo className="w-24 h-24 animate-pulse" />
                 <div className="absolute inset-0 border-2 border-rose-600/30 rounded-full animate-ping"></div>
               </div>
-              <div className="text-center space-y-3">
+              <div className="text-center space-y-3 px-10">
                 <h2 className="text-lg font-bold tracking-[0.2em] uppercase text-amber-500">Extracting Aroma</h2>
-                <div className="flex items-center justify-center space-x-2">
+                <p className="text-[10px] text-white/40 uppercase tracking-widest">Consulting Imperial Archives...</p>
+                <div className="flex items-center justify-center space-x-2 pt-2">
                   <span className="w-1.5 h-1.5 bg-rose-600 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
                   <span className="w-1.5 h-1.5 bg-rose-600 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
                   <span className="w-1.5 h-1.5 bg-rose-600 rounded-full animate-bounce"></span>
@@ -225,29 +227,32 @@ const App: React.FC = () => {
           )}
 
           {state === 'error' && (
-            <div className="absolute inset-0 bg-black/98 z-50 flex flex-col items-center justify-center p-8 text-center space-y-8 animate-in zoom-in duration-300">
+            <div className="absolute inset-0 bg-black/98 z-[60] flex flex-col items-center justify-center p-8 text-center space-y-8 animate-in zoom-in duration-300">
               <div className="w-20 h-20 bg-rose-900/20 text-rose-500 rounded-full flex items-center justify-center border border-rose-600/30">
                 <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-4">
                 <h2 className="text-xl font-bold uppercase tracking-widest text-amber-500">Sensor Disruption</h2>
-                <p className="text-rose-200/50 text-xs max-w-xs mx-auto uppercase tracking-wider leading-relaxed font-medium">{error}</p>
+                <p className="text-rose-100/90 text-[11px] max-w-xs mx-auto uppercase tracking-wider leading-relaxed font-bold bg-rose-950/40 p-5 rounded-2xl border border-rose-500/30 shadow-[0_0_30px_rgba(155,17,30,0.2)]">
+                  {error}
+                </p>
+                <p className="text-[9px] text-white/30 uppercase tracking-[0.2em]">Check Vercel ENV settings if problem persists</p>
               </div>
-              <div className="flex flex-col space-y-3 w-full max-w-xs">
-                {stats.points < 10 && !stats.isPremium && (
-                  <button 
-                    onClick={() => setIsStripeOpen(true)}
-                    className="bg-rose-700 text-amber-400 px-10 py-4 rounded-full font-bold uppercase tracking-widest text-[10px] transition-all shadow-lg border border-amber-500/20"
-                  >
-                    Authorize Imperial Access
-                  </button>
-                )}
+              <div className="flex flex-col space-y-3 w-full max-w-xs pt-4">
                 <button 
                   onClick={resetApp}
-                  className="bg-rose-950/40 hover:bg-rose-900/60 text-amber-100/80 px-10 py-4 rounded-full font-bold uppercase tracking-widest text-[10px] border border-amber-600/20 transition-all"
+                  className="bg-rose-700 text-amber-400 px-10 py-4 rounded-xl font-bold uppercase tracking-widest text-[10px] shadow-lg border border-amber-500/20 active:scale-95 transition-all"
                 >
                   Return to Imperial Core
                 </button>
+                {!stats.isPremium && (
+                  <button 
+                    onClick={() => setIsStripeOpen(true)}
+                    className="bg-black border border-rose-600/30 text-rose-400 px-10 py-4 rounded-xl font-bold uppercase tracking-widest text-[10px] active:scale-95 transition-all"
+                  >
+                    Upgrade Authority
+                  </button>
+                )}
               </div>
             </div>
           )}
