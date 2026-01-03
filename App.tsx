@@ -6,7 +6,6 @@ import { ScannerOverlay } from './components/ScannerOverlay';
 import { WineResult } from './components/WineResult';
 import { Logo } from './components/Logo';
 import { SavedCollection } from './components/SavedCollection';
-import { StripeModal } from './components/StripeModal';
 
 const STORAGE_KEY = 'ai_sommelier_stats';
 
@@ -14,14 +13,11 @@ const App: React.FC = () => {
   const [state, setState] = useState<AppState>('landing');
   const [wineDetails, setWineDetails] = useState<WineDetails | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isStripeOpen, setIsStripeOpen] = useState(false);
   
   const [stats, setStats] = useState<UserStats>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) return JSON.parse(saved);
     return {
-      points: 100,
-      isPremium: false,
       savedWines: []
     };
   });
@@ -60,12 +56,6 @@ const App: React.FC = () => {
   const handleCapture = useCallback(async () => {
     if (!videoRef.current || !canvasRef.current) return;
     
-    if (!stats.isPremium && stats.points < 10) {
-      setError("RESERVE POINTS DEPLETED: Upgrade to Ruby Premium for infinite scan capacity.");
-      setState('error');
-      return;
-    }
-
     const video = videoRef.current;
     const canvas = canvasRef.current;
     canvas.width = video.videoWidth;
@@ -77,18 +67,13 @@ const App: React.FC = () => {
     const base64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
     
     processImage(base64);
-  }, [stats]);
+  }, []);
 
   const processImage = async (base64: string) => {
     setState('loading');
     stopCamera();
     try {
       const details = await analyzeWineImage(base64);
-      
-      if (!stats.isPremium) {
-        setStats(prev => ({ ...prev, points: Math.max(0, prev.points - 10) }));
-      }
-
       setWineDetails({ ...details, id: Date.now().toString(), scanDate: new Date().toISOString() });
       setState('results');
     } catch (err: any) {
@@ -134,11 +119,6 @@ const App: React.FC = () => {
     return () => stopCamera();
   }, [state]);
 
-  const handlePremiumSuccess = () => {
-    setStats(prev => ({ ...prev, isPremium: true }));
-    setIsStripeOpen(false);
-  };
-
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-[#0c0c0c] flex flex-col items-center justify-center text-white">
       <canvas ref={canvasRef} className="hidden" />
@@ -148,12 +128,6 @@ const App: React.FC = () => {
         onChange={handleFileUpload} 
         accept="image/*" 
         className="hidden" 
-      />
-
-      <StripeModal 
-        isOpen={isStripeOpen} 
-        onClose={() => setIsStripeOpen(false)} 
-        onSuccess={handlePremiumSuccess} 
       />
 
       {/* Landing Page */}
@@ -202,10 +176,7 @@ const App: React.FC = () => {
             onCapture={handleCapture}
             onGalleryClick={() => fileInputRef.current?.click()}
             onOpenCollection={() => setState('collection')}
-            onUpgrade={() => setIsStripeOpen(true)}
             isLoading={state === 'loading'}
-            points={stats.points}
-            isPremium={stats.isPremium}
           />
 
           {state === 'loading' && (
@@ -236,7 +207,7 @@ const App: React.FC = () => {
                 <p className="text-rose-100/90 text-[11px] max-w-xs mx-auto uppercase tracking-wider leading-relaxed font-bold bg-rose-950/40 p-5 rounded-2xl border border-rose-500/30 shadow-[0_0_30px_rgba(155,17,30,0.2)]">
                   {error}
                 </p>
-                <p className="text-[9px] text-white/30 uppercase tracking-[0.2em]">Check Vercel ENV settings if problem persists</p>
+                <p className="text-[9px] text-white/30 uppercase tracking-[0.2em]">Ensure the label is clear and well lit</p>
               </div>
               <div className="flex flex-col space-y-3 w-full max-w-xs pt-4">
                 <button 
@@ -245,14 +216,6 @@ const App: React.FC = () => {
                 >
                   Return to Imperial Core
                 </button>
-                {!stats.isPremium && (
-                  <button 
-                    onClick={() => setIsStripeOpen(true)}
-                    className="bg-black border border-rose-600/30 text-rose-400 px-10 py-4 rounded-xl font-bold uppercase tracking-widest text-[10px] active:scale-95 transition-all"
-                  >
-                    Upgrade Authority
-                  </button>
-                )}
               </div>
             </div>
           )}

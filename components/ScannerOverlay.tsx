@@ -8,10 +8,7 @@ interface ScannerOverlayProps {
   onCapture: () => void;
   onGalleryClick: () => void;
   onOpenCollection: () => void;
-  onUpgrade: () => void;
   isLoading: boolean;
-  points: number;
-  isPremium: boolean;
 }
 
 export const ScannerOverlay: React.FC<ScannerOverlayProps> = ({ 
@@ -19,10 +16,7 @@ export const ScannerOverlay: React.FC<ScannerOverlayProps> = ({
   onCapture, 
   onGalleryClick, 
   onOpenCollection,
-  onUpgrade,
-  isLoading, 
-  points, 
-  isPremium 
+  isLoading
 }) => {
   const isScanning = state === 'scanning';
 
@@ -35,34 +29,9 @@ export const ScannerOverlay: React.FC<ScannerOverlayProps> = ({
             <Logo className="w-8 h-8" />
             <div className="text-rose-600 uppercase tracking-[0.3em] text-[10px] font-bold">AI Sommelier</div>
           </div>
-          <div className="pointer-events-auto">
-            {!isPremium ? (
-              <button 
-                onClick={onUpgrade}
-                className="bg-rose-900/30 border border-rose-600/50 px-3 py-1 rounded-full text-[9px] text-amber-400 font-bold uppercase tracking-widest hover:bg-rose-900/50 transition-all"
-              >
-                Upgrade to Ruby Premium
-              </button>
-            ) : (
-              <div className="bg-amber-900/30 border border-amber-600/50 px-3 py-1 rounded-full text-[9px] text-rose-500 font-bold uppercase tracking-widest">
-                Imperial Member
-              </div>
-            )}
+          <div className="bg-rose-950/40 border border-rose-600/30 px-3 py-1 rounded-full text-[9px] text-amber-500 font-bold uppercase tracking-widest">
+            Unlimited Scan Protocol
           </div>
-        </div>
-
-        <div className="flex flex-col items-end space-y-2 pointer-events-auto">
-           <div className="bg-rose-950/40 backdrop-blur-md px-4 py-2 rounded-2xl text-[10px] text-white/80 border border-amber-600/30 flex flex-col items-end">
-             <div className="flex items-center space-x-2">
-               <span className="opacity-60 uppercase tracking-tighter">Reserves</span>
-               <span className="font-bold text-amber-400">{isPremium ? 'UNLIMITED' : `${points} PTS`}</span>
-             </div>
-             {!isPremium && (
-               <div className="w-24 h-1 bg-white/10 rounded-full mt-1 overflow-hidden">
-                 <div className="h-full bg-rose-600" style={{ width: `${(points / 100) * 100}%` }}></div>
-               </div>
-             )}
-           </div>
         </div>
       </div>
 
@@ -77,7 +46,7 @@ export const ScannerOverlay: React.FC<ScannerOverlayProps> = ({
             
             <div className="absolute inset-0 flex items-center justify-center">
                <div className="text-amber-500/60 text-[10px] tracking-[0.2em] uppercase font-bold text-center w-full mt-40">
-                  {points < 10 && !isPremium ? 'Depleted Points' : 'Frame the vintage'}
+                  Frame the vintage
                </div>
             </div>
           </div>
@@ -105,7 +74,7 @@ export const ScannerOverlay: React.FC<ScannerOverlayProps> = ({
           <div className="relative pointer-events-auto">
             <button 
               onClick={onCapture}
-              disabled={isLoading || (points < 10 && !isPremium)}
+              disabled={isLoading}
               className="w-16 h-16 rounded-full border-4 border-amber-500 flex items-center justify-center p-1 transition-transform active:scale-95 disabled:opacity-30"
             >
               <div className="w-full h-full bg-rose-700 rounded-full"></div>

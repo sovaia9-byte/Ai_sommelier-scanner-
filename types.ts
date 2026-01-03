@@ -21,7 +21,5 @@ export interface WineDetails {
 export type AppState = 'landing' | 'scanning' | 'results' | 'loading' | 'error' | 'collection';
 
 export interface UserStats {
-  points: number;
-  isPremium: boolean;
   savedWines: WineDetails[];
 }
