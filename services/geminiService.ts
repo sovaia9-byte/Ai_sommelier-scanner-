@@ -3,10 +3,11 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { WineDetails } from "../types";
 
 export async function analyzeWineImage(base64Image: string): Promise<WineDetails> {
-  const apiKey = process.env.API_KEY;
+  // Check for various potential environment variable names
+  const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
   
   if (!apiKey || apiKey === "undefined" || apiKey.length < 10) {
-    throw new Error("IMPERIAL KEY MISSING: The API_KEY environment variable is not configured correctly in the Imperial Core (Vercel).");
+    throw new Error("IMPERIAL KEY MISSING: The API_KEY environment variable is not set. Ensure it is configured in your project settings (e.g., Vercel Environment Variables).");
   }
 
   const ai = new GoogleGenAI({ apiKey });
@@ -74,15 +75,11 @@ export async function analyzeWineImage(base64Image: string): Promise<WineDetails
   } catch (error: any) {
     const message = error?.message || "";
     
-    // Categorizing common Google API errors
     if (message.includes("API_KEY_INVALID") || message.includes("unauthorized") || message.includes("401")) {
-      throw new Error("UNAUTHORIZED ACCESS: The provided API key is invalid or restricted. Please check your Google AI Studio credentials.");
+      throw new Error("UNAUTHORIZED ACCESS: The provided API key is invalid. Double check the value in your Environment Variables.");
     }
     if (message.includes("quota") || message.includes("429")) {
-      throw new Error("QUOTA EXHAUSTED: The Imperial archives are currently overwhelmed. Please try again in a moment.");
-    }
-    if (message.includes("Safety") || message.includes("HARM_CATEGORY")) {
-      throw new Error("PROTOCOL BREACH: The visual data was flagged by safety filters. Ensure the label is appropriate.");
+      throw new Error("QUOTA EXHAUSTED: You have reached the rate limit for this API key.");
     }
     
     console.error("Sommelier Error:", error);

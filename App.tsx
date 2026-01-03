@@ -78,7 +78,7 @@ const App: React.FC = () => {
       setState('results');
     } catch (err: any) {
       console.error("App Process Error:", err);
-      setError(err.message || "ANALYSIS FAILED: The Imperial core encountered an unknown disruption.");
+      setError(err.message || "ANALYSIS FAILED: A sensor disruption occurred.");
       setState('error');
     }
   };
@@ -204,10 +204,10 @@ const App: React.FC = () => {
               </div>
               <div className="space-y-4">
                 <h2 className="text-xl font-bold uppercase tracking-widest text-amber-500">Sensor Disruption</h2>
-                <p className="text-rose-100/90 text-[11px] max-w-xs mx-auto uppercase tracking-wider leading-relaxed font-bold bg-rose-950/40 p-5 rounded-2xl border border-rose-500/30 shadow-[0_0_30px_rgba(155,17,30,0.2)]">
+                <div className="text-rose-100/90 text-[11px] max-w-xs mx-auto uppercase tracking-wider leading-relaxed font-bold bg-rose-950/40 p-5 rounded-2xl border border-rose-500/30 shadow-[0_0_30px_rgba(155,17,30,0.2)]">
                   {error}
-                </p>
-                <p className="text-[9px] text-white/30 uppercase tracking-[0.2em]">Ensure the label is clear and well lit</p>
+                </div>
+                <p className="text-[9px] text-white/30 uppercase tracking-[0.2em]">Ensure API_KEY is set in Vercel or your local .env</p>
               </div>
               <div className="flex flex-col space-y-3 w-full max-w-xs pt-4">
                 <button 
