@@ -3,11 +3,15 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { WineDetails } from "../types";
 
 export async function analyzeWineImage(base64Image: string): Promise<WineDetails> {
-  // Check for various potential environment variable names
+  // Check common environment variable names used by Render, Vercel, and local dev
   const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
   
   if (!apiKey || apiKey === "undefined" || apiKey.length < 10) {
-    throw new Error("IMPERIAL KEY MISSING: The API_KEY environment variable is not set. Ensure it is configured in your project settings (e.g., Vercel Environment Variables).");
+    throw new Error(
+      "IMPERIAL KEY MISSING: The API_KEY is not detected. " +
+      "If you are on Render: Go to Dashboard > Environment > Add Environment Variable. " +
+      "Set Key to 'API_KEY' and paste your Gemini API Key as the Value."
+    );
   }
 
   const ai = new GoogleGenAI({ apiKey });
@@ -76,13 +80,13 @@ export async function analyzeWineImage(base64Image: string): Promise<WineDetails
     const message = error?.message || "";
     
     if (message.includes("API_KEY_INVALID") || message.includes("unauthorized") || message.includes("401")) {
-      throw new Error("UNAUTHORIZED ACCESS: The provided API key is invalid. Double check the value in your Environment Variables.");
+      throw new Error("UNAUTHORIZED ACCESS: The API key provided in Render/Vercel settings is invalid.");
     }
     if (message.includes("quota") || message.includes("429")) {
-      throw new Error("QUOTA EXHAUSTED: You have reached the rate limit for this API key.");
+      throw new Error("QUOTA EXHAUSTED: The Imperial API limit has been reached. Please try again later.");
     }
     
     console.error("Sommelier Error:", error);
-    throw new Error(error.message || "SENSOR MALFUNCTION: The vintage data could not be decanted. Ensure the label is clear.");
+    throw new Error(error.message || "SENSOR MALFUNCTION: Unable to read the vintage label. Please try again with better lighting.");
   }
 }
