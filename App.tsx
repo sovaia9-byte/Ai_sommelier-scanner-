@@ -49,7 +49,7 @@ const App: React.FC = () => {
       }
     } catch (err) {
       console.error("Camera access denied", err);
-      setError("CAMERA ACCESS DENIED: Imperial scanners require permission to operate. Please check your browser settings.");
+      setError("CAMERA ERROR: Permission is required to scan labels. Please enable camera access in your browser settings.");
       setState('error');
     }
   };
@@ -57,7 +57,10 @@ const App: React.FC = () => {
   const stopCamera = () => {
     if (videoRef.current && videoRef.current.srcObject) {
       const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach(track => track.stop());
+      stream.getTracks().forEach(track => {
+        track.stop();
+        track.enabled = false;
+      });
       videoRef.current.srcObject = null;
     }
   };
@@ -87,7 +90,7 @@ const App: React.FC = () => {
       setState('results');
     } catch (err: any) {
       console.error("Process Error:", err);
-      setError(err.message || "ANALYSIS FAILED: The Imperial core encountered a sensor disruption.");
+      setError(err.message || "SCAN FAILED: The Imperial core encountered a sensor disruption.");
       setState('error');
     }
   };
@@ -146,13 +149,13 @@ const App: React.FC = () => {
       {state === 'landing' && (
         <div className="flex flex-col items-center justify-center space-y-12 animate-in fade-in zoom-in duration-1000 px-8 text-center">
           <div className="relative">
-            <div className="absolute -inset-20 bg-rose-700/10 blur-[100px] rounded-full animate-pulse"></div>
-            <Logo className="w-56 h-56 relative z-10 filter drop-shadow-[0_0_40px_rgba(155,17,30,0.4)]" />
+            <div className="absolute -inset-24 bg-rose-700/10 blur-[100px] rounded-full animate-pulse"></div>
+            <Logo className="w-56 h-56 relative z-10 filter drop-shadow-[0_0_50px_rgba(155,17,30,0.5)]" />
           </div>
           <div className="space-y-4">
-            <h1 className="text-5xl font-light tracking-[0.5em] uppercase text-amber-500 drop-shadow-lg">AI SOMMELIER</h1>
-            <div className="h-0.5 w-32 bg-gradient-to-r from-transparent via-amber-600/50 to-transparent mx-auto"></div>
-            <p className="text-rose-400/60 text-[12px] tracking-[0.4em] uppercase font-bold">Imperial Viticulture Authority</p>
+            <h1 className="text-6xl font-light tracking-[0.5em] uppercase text-amber-500 drop-shadow-lg">AI SOMMELIER</h1>
+            <div className="h-0.5 w-40 bg-gradient-to-r from-transparent via-amber-600/50 to-transparent mx-auto"></div>
+            <p className="text-rose-400/60 text-[12px] tracking-[0.4em] uppercase font-bold">Imperial Viticulture Protocol</p>
           </div>
           <div className="flex flex-col items-center space-y-6 w-full max-w-xs">
             <button 
@@ -160,15 +163,18 @@ const App: React.FC = () => {
               className="group relative w-full px-12 py-5 overflow-hidden rounded-full border border-amber-600/30 hover:border-rose-500/50 transition-all duration-700 shadow-[0_0_30px_rgba(212,175,55,0.1)] active:scale-95"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-rose-950/30 via-rose-900/40 to-rose-950/30 group-hover:opacity-100 transition-opacity"></div>
-              <span className="relative text-sm tracking-[0.4em] font-black uppercase text-amber-500 group-hover:text-rose-300 transition-colors">Initiate Scan</span>
+              <span className="relative text-sm tracking-[0.4em] font-black uppercase text-amber-500 group-hover:text-rose-200 transition-colors">Start Scanner</span>
             </button>
             <button 
               onClick={() => setState('collection')}
               className="text-[11px] uppercase tracking-[0.3em] text-amber-600/70 hover:text-rose-400 transition-all font-bold flex items-center space-x-3 group"
             >
-              <span>Cellar Archive ({stats.savedWines.length})</span>
+              <span>The Cellar ({stats.savedWines.length})</span>
               <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
             </button>
+          </div>
+          <div className="pt-12 opacity-20 text-[9px] uppercase tracking-widest text-amber-500 font-medium">
+            Authorized for Render & Sevalla Deployment
           </div>
         </div>
       )}
@@ -198,11 +204,10 @@ const App: React.FC = () => {
               <div className="relative">
                 <Logo className="w-32 h-32 animate-pulse" />
                 <div className="absolute inset-0 border-2 border-rose-600/40 rounded-full animate-ping [animation-duration:3s]"></div>
-                <div className="absolute -inset-6 border border-amber-500/10 rounded-full animate-spin [animation-duration:12s]"></div>
               </div>
               <div className="text-center space-y-5 px-12">
                 <h2 className="text-2xl font-bold tracking-[0.4em] uppercase text-amber-500">Decanting Data</h2>
-                <p className="text-[11px] text-white/30 uppercase tracking-[0.2em] max-w-[240px] leading-relaxed mx-auto">Accessing Imperial Viticulture Archives...</p>
+                <p className="text-[11px] text-white/30 uppercase tracking-[0.2em] max-w-[240px] leading-relaxed mx-auto">Accessing Global Viticulture Archives...</p>
                 <div className="flex items-center justify-center space-x-3 pt-6">
                   <span className="w-2.5 h-2.5 bg-rose-700 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
                   <span className="w-2.5 h-2.5 bg-rose-800 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
@@ -218,7 +223,7 @@ const App: React.FC = () => {
                 <svg className="w-14 h-14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
               </div>
               <div className="space-y-6">
-                <h2 className="text-3xl font-bold uppercase tracking-[0.3em] text-amber-500">Sensor Disruption</h2>
+                <h2 className="text-2xl font-bold uppercase tracking-[0.3em] text-amber-500">System Alert</h2>
                 <div className="text-rose-100/90 text-[12px] max-w-sm mx-auto uppercase tracking-widest leading-relaxed font-bold bg-rose-950/40 p-8 rounded-3xl border border-rose-600/30 shadow-2xl">
                   {error}
                 </div>
@@ -228,7 +233,7 @@ const App: React.FC = () => {
                   onClick={resetApp}
                   className="bg-rose-800 hover:bg-rose-700 text-amber-400 px-10 py-5 rounded-2xl font-black uppercase tracking-[0.3em] text-[11px] shadow-2xl border border-amber-500/20 active:scale-95 transition-all"
                 >
-                  Return to Imperial Core
+                  Return to Dashboard
                 </button>
               </div>
             </div>

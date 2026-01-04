@@ -1,9 +1,19 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { WineDetails } from "../types";
 
 export async function analyzeWineImage(base64Image: string): Promise<WineDetails> {
-  // Always use the API key directly from process.env.API_KEY as per the @google/genai coding guidelines.
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = process.env.API_KEY;
+  
+  if (!apiKey || apiKey === "undefined" || apiKey.length < 10) {
+    throw new Error(
+      "CONFIGURATION ERROR: The Imperial API Key is missing. " +
+      "If you are using Sevalla or Render: Go to 'Environment Variables' in your dashboard, " +
+      "add a variable named 'API_KEY', and paste your Gemini Key there."
+    );
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
   
   try {
     const response = await ai.models.generateContent({
@@ -12,7 +22,7 @@ export async function analyzeWineImage(base64Image: string): Promise<WineDetails
         {
           parts: [
             {
-              text: "Analyze this wine label. You are an Imperial Sommelier. Provide a precise, luxurious, and professional viticultural analysis."
+              text: "Analyze this wine label. You are an Imperial Sommelier. Provide a precise, luxurious, and technical viticultural analysis."
             },
             {
               inlineData: {
@@ -26,30 +36,29 @@ export async function analyzeWineImage(base64Image: string): Promise<WineDetails
       config: {
         systemInstruction: `You are the AI Imperial Sommelier. Your task is to analyze wine labels with absolute precision. 
         Provide a luxurious and professional viticultural analysis. 
-        If specific data points are not visible on the label, use your extensive knowledge of producers and regions to provide highly accurate estimations.
         The output must be strictly valid JSON following the provided schema. No markdown, no extra text.`,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            name: { type: Type.STRING, description: "Full prestigious name of the wine" },
-            vintage: { type: Type.STRING, description: "Production year (e.g., '2018')" },
-            region: { type: Type.STRING, description: "Specific wine region/appellation" },
+            name: { type: Type.STRING, description: "Full name of the wine" },
+            vintage: { type: Type.STRING, description: "Production year" },
+            region: { type: Type.STRING, description: "Wine region" },
             country: { type: Type.STRING, description: "Country of origin" },
-            rating: { type: Type.STRING, description: "Professional sommelier score (e.g., '95/100 Imperial Points')" },
-            abv: { type: Type.STRING, description: "Alcohol by volume percentage" },
-            description: { type: Type.STRING, description: "A poetic yet technical sommelier overview" },
-            grapesVariety: { type: Type.STRING, description: "Detailed grape variety breakdown" },
+            rating: { type: Type.STRING, description: "Sommelier rating (e.g. 95/100)" },
+            abv: { type: Type.STRING, description: "Alcohol content" },
+            description: { type: Type.STRING, description: "Technical sommelier overview" },
+            grapesVariety: { type: Type.STRING, description: "Grape variety breakdown" },
             foodPairings: { 
               type: Type.ARRAY, 
               items: { type: Type.STRING },
-              description: "Elite culinary pairings"
+              description: "Food pairings"
             },
-            judgmentPerception: { type: Type.STRING, description: "A singular, definitive stylistic judgment" },
-            climate: { type: Type.STRING, description: "Macro-climate and terroir description" },
-            tastingNotes: { type: Type.STRING, description: "Rich aromatic and flavor profile notes" },
-            soilStructure: { type: Type.STRING, description: "The geological composition of the vineyard" },
-            funFact: { type: Type.STRING, description: "A captivating viticultural history or fact" },
+            judgmentPerception: { type: Type.STRING, description: "Definitive stylistic judgment" },
+            climate: { type: Type.STRING, description: "Terroir climate" },
+            tastingNotes: { type: Type.STRING, description: "Detailed flavor profile" },
+            soilStructure: { type: Type.STRING, description: "Soil composition" },
+            funFact: { type: Type.STRING, description: "Interesting viticultural fact" },
           },
           required: [
             "name", "vintage", "region", "country", "rating", "abv", 
@@ -61,22 +70,13 @@ export async function analyzeWineImage(base64Image: string): Promise<WineDetails
       },
     });
 
-    // Directly access the .text property from the GenerateContentResponse object.
     const resultText = response.text;
     if (!resultText) throw new Error("The Imperial archives returned an empty response.");
     
     return JSON.parse(resultText) as WineDetails;
   } catch (error: any) {
     console.error("Sommelier Error:", error);
-    
-    const message = error?.message || "";
-    if (message.includes("API_KEY_INVALID") || message.includes("401")) {
-      throw new Error("UNAUTHORIZED: Your API Key is invalid. Please update it in your hosting settings.");
-    }
-    if (message.includes("quota") || message.includes("429")) {
-      throw new Error("QUOTA EXCEEDED: The Imperial API limit has been reached. Please try again later.");
-    }
-    
-    throw new Error("SENSOR MALFUNCTION: Unable to read the vintage label. Ensure the label is clear and well-lit.");
+    if (error.message.includes("API_KEY")) throw error;
+    throw new Error("UNABLE TO SCAN: Ensure the label is well-lit and the API Key is valid.");
   }
 }
