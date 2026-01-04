@@ -3,13 +3,14 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { WineDetails } from "../types";
 
 export async function analyzeWineImage(base64Image: string): Promise<WineDetails> {
+  // Vite will replace process.env.API_KEY during the build process
   const apiKey = process.env.API_KEY;
   
   if (!apiKey || apiKey === "undefined" || apiKey.length < 10) {
     throw new Error(
       "CONFIGURATION ERROR: The Imperial API Key is missing. " +
-      "If you are using Sevalla or Render: Go to 'Environment Variables' in your dashboard, " +
-      "add a variable named 'API_KEY', and paste your Gemini Key there."
+      "Go to your deployment dashboard (Vercel, Sevalla, or Azure), " +
+      "add an Environment Variable named 'API_KEY', and paste your Gemini Key."
     );
   }
 
@@ -45,7 +46,7 @@ export async function analyzeWineImage(base64Image: string): Promise<WineDetails
             vintage: { type: Type.STRING, description: "Production year" },
             region: { type: Type.STRING, description: "Wine region" },
             country: { type: Type.STRING, description: "Country of origin" },
-            rating: { type: Type.STRING, description: "Sommelier rating (e.g. 95/100)" },
+            rating: { type: Type.STRING, description: "Sommelier rating" },
             abv: { type: Type.STRING, description: "Alcohol content" },
             description: { type: Type.STRING, description: "Technical sommelier overview" },
             grapesVariety: { type: Type.STRING, description: "Grape variety breakdown" },
@@ -76,7 +77,7 @@ export async function analyzeWineImage(base64Image: string): Promise<WineDetails
     return JSON.parse(resultText) as WineDetails;
   } catch (error: any) {
     console.error("Sommelier Error:", error);
-    if (error.message.includes("API_KEY")) throw error;
+    if (error.message?.includes("API_KEY")) throw error;
     throw new Error("UNABLE TO SCAN: Ensure the label is well-lit and the API Key is valid.");
   }
 }
