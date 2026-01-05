@@ -93,6 +93,7 @@ const App: React.FC = () => {
       setState('results');
     } catch (err: any) {
       console.error("Process Error:", err);
+      // Pass the specific error message to the UI
       setError(err.message || "SCAN FAILED: The Imperial core encountered a sensor disruption.");
       setState('error');
     }
