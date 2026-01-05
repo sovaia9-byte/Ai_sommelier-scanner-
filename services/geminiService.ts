@@ -4,11 +4,12 @@ import { WineDetails } from "../types";
 export async function analyzeWineImage(base64Image: string): Promise<WineDetails> {
   const apiKey = process.env.API_KEY;
 
-  // Explicit check for the API key to prevent vague "sensor disruption" errors
-  if (!apiKey || apiKey === "undefined" || apiKey.length < 10) {
+  // Diagnostic check: If this fails, you need to check Vercel Environment Variables
+  if (!apiKey || apiKey === "" || apiKey === "undefined") {
+    console.error("CRITICAL: API_KEY is not defined in the environment.");
     throw new Error(
-      "API KEY MISSING: The Imperial Sommelier requires a Gemini API Key. " +
-      "Please add 'API_KEY' to your Vercel Environment Variables and re-deploy."
+      "CONFIGURATION ERROR: The Imperial API Key is missing. " +
+      "Please add 'API_KEY' to your Vercel Project Settings and Re-Deploy."
     );
   }
 
@@ -16,7 +17,6 @@ export async function analyzeWineImage(base64Image: string): Promise<WineDetails
   
   try {
     const response = await ai.models.generateContent({
-      // Using Flash for high-speed image processing/label scanning
       model: "gemini-3-flash-preview",
       contents: [
         {
@@ -35,7 +35,6 @@ export async function analyzeWineImage(base64Image: string): Promise<WineDetails
       ],
       config: {
         systemInstruction: `You are the AI Imperial Sommelier. Your task is to analyze wine labels with absolute precision. 
-        Provide a luxurious and professional viticultural analysis. 
         The output must be strictly valid JSON following the provided schema. No markdown, no extra text.`,
         responseMimeType: "application/json",
         responseSchema: {
@@ -70,18 +69,18 @@ export async function analyzeWineImage(base64Image: string): Promise<WineDetails
       },
     });
 
-    const resultText = response.text?.trim();
-    if (!resultText) throw new Error("The Imperial archives returned an empty response.");
+    const resultText = response.text;
+    if (!resultText) throw new Error("Empty response from Imperial Archives.");
     
     return JSON.parse(resultText) as WineDetails;
   } catch (error: any) {
-    console.error("Sommelier Service Error:", error);
+    console.error("Sommelier Service Error Details:", error);
     
-    // Check if it's an API Key or Auth error
-    if (error.message?.includes("API key") || error.status === 401 || error.status === 403) {
-      throw new Error("AUTHENTICATION FAILED: The Imperial API Key is invalid or restricted.");
+    // Check for common API errors
+    if (error.status === 401 || error.status === 403) {
+      throw new Error("AUTHENTICATION ERROR: Your API Key is invalid or restricted.");
     }
-
-    throw new Error(error.message || "SCAN FAILED: The Imperial core encountered a sensor disruption.");
+    
+    throw new Error(error.message || "SCAN ERROR: The Imperial core encountered a sensor disruption.");
   }
 }

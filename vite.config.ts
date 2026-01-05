@@ -3,13 +3,13 @@ import react from '@vitejs/plugin-react';
 import process from 'node:process';
 
 export default defineConfig(({ mode }) => {
-  // Load all env variables including those from Vercel system env
+  // Load env variables from the actual system environment (Vercel)
   const env = loadEnv(mode, process.cwd(), '');
   
   return {
     plugins: [react()],
     define: {
-      // Use the key from Vercel (env.API_KEY) or fallback to local process.env
+      // Prioritize the environment variable from Vercel
       'process.env.API_KEY': JSON.stringify(env.API_KEY || process.env.API_KEY || "")
     },
     build: {
