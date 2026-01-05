@@ -2,23 +2,16 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { WineDetails } from "../types";
 
+// Always initialize GoogleGenAI with a named parameter using process.env.API_KEY directly
 export async function analyzeWineImage(base64Image: string): Promise<WineDetails> {
-  // Vite will replace process.env.API_KEY during the build process
-  const apiKey = process.env.API_KEY;
-  
-  if (!apiKey || apiKey === "undefined" || apiKey.length < 10) {
-    throw new Error(
-      "CONFIGURATION ERROR: The Imperial API Key is missing. " +
-      "Go to your deployment dashboard (Vercel, Sevalla, or Azure), " +
-      "add an Environment Variable named 'API_KEY', and paste your Gemini Key."
-    );
-  }
-
-  const ai = new GoogleGenAI({ apiKey });
+  // Use the API key directly from process.env.API_KEY as per the @google/genai directive.
+  // This avoids requesting the user for an API key in the UI or code logic.
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      // Technical wine analysis is a complex reasoning task, so gemini-3-pro-preview is selected
+      model: "gemini-3-pro-preview",
       contents: [
         {
           parts: [
@@ -71,13 +64,14 @@ export async function analyzeWineImage(base64Image: string): Promise<WineDetails
       },
     });
 
-    const resultText = response.text;
+    // Access the .text property directly (not a method call) as specified in the SDK documentation
+    const resultText = response.text?.trim();
     if (!resultText) throw new Error("The Imperial archives returned an empty response.");
     
     return JSON.parse(resultText) as WineDetails;
   } catch (error: any) {
     console.error("Sommelier Error:", error);
-    if (error.message?.includes("API_KEY")) throw error;
-    throw new Error("UNABLE TO SCAN: Ensure the label is well-lit and the API Key is valid.");
+    // Generic error message for internal issues to maintain a smooth user experience
+    throw new Error("UNABLE TO SCAN: The Imperial core encountered a sensor disruption. Ensure the label is well-lit.");
   }
 }

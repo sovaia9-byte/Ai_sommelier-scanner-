@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { analyzeWineImage } from './services/geminiService';
 import { WineDetails, AppState, UserStats } from './types';
@@ -41,7 +40,11 @@ const App: React.FC = () => {
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' }
+        video: { 
+          facingMode: 'environment',
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        }
       });
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -174,7 +177,7 @@ const App: React.FC = () => {
             </button>
           </div>
           <div className="pt-12 opacity-20 text-[9px] uppercase tracking-widest text-amber-500 font-medium">
-            Authorized for Render & Sevalla Deployment
+            Authorized System Access
           </div>
         </div>
       )}
@@ -187,7 +190,7 @@ const App: React.FC = () => {
             autoPlay
             playsInline
             muted
-            className={`absolute inset-0 w-full h-full object-cover grayscale opacity-40 transition-opacity duration-1000 ${state !== 'scanning' ? 'hidden' : ''}`}
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${state !== 'scanning' ? 'opacity-0' : 'opacity-100'}`}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-black/90 pointer-events-none" />
           
