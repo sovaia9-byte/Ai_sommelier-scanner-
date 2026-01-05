@@ -4,12 +4,12 @@ import { WineDetails } from "../types";
 export async function analyzeWineImage(base64Image: string): Promise<WineDetails> {
   const apiKey = process.env.API_KEY;
 
-  // Diagnostic check: If this fails, you need to check Vercel Environment Variables
+  // Check for the API key and provide a helpful link if it's missing
   if (!apiKey || apiKey === "" || apiKey === "undefined") {
-    console.error("CRITICAL: API_KEY is not defined in the environment.");
+    console.error("CRITICAL: API_KEY is missing.");
     throw new Error(
       "CONFIGURATION ERROR: The Imperial API Key is missing. " +
-      "Please add 'API_KEY' to your Vercel Project Settings and Re-Deploy."
+      "Get a free Gemini API Key from aistudio.google.com, add it to Vercel as 'API_KEY', and Re-Deploy."
     );
   }
 
@@ -76,7 +76,6 @@ export async function analyzeWineImage(base64Image: string): Promise<WineDetails
   } catch (error: any) {
     console.error("Sommelier Service Error Details:", error);
     
-    // Check for common API errors
     if (error.status === 401 || error.status === 403) {
       throw new Error("AUTHENTICATION ERROR: Your API Key is invalid or restricted.");
     }
