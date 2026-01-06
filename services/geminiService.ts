@@ -1,15 +1,10 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { WineDetails } from "../types";
 
 export async function analyzeWineImage(base64Image: string): Promise<WineDetails> {
-  // Always fetch the latest key from environment right before the call
-  const apiKey = process.env.API_KEY;
-
-  if (!apiKey || apiKey === "" || apiKey === "undefined") {
-    throw new Error("MISSING_KEY");
-  }
-
-  const ai = new GoogleGenAI({ apiKey });
+  // Fix: Initialize GoogleGenAI using process.env.API_KEY directly as per SDK guidelines
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   try {
     const response = await ai.models.generateContent({
@@ -18,7 +13,7 @@ export async function analyzeWineImage(base64Image: string): Promise<WineDetails
         {
           parts: [
             {
-              text: "Analyze this wine label. You are an Imperial Sommelier. Provide a precise, luxurious, and technical viticultural analysis."
+              text: "You are a Master Sommelier. Analyze this wine label with 100% precision. Identify the exact producer, wine name, vintage year, sub-region, and grape varietal composition. Provide high-accuracy technical insights into the terroir soil geological structure, macro-climate conditions, and a definitive stylistic judgment. Return the results strictly as a JSON object."
             },
             {
               inlineData: {
@@ -31,29 +26,30 @@ export async function analyzeWineImage(base64Image: string): Promise<WineDetails
       ],
       config: {
         systemInstruction: `You are the AI Imperial Sommelier. Your task is to analyze wine labels with absolute precision. 
-        The output must be strictly valid JSON following the provided schema. No markdown, no extra text.`,
+        Extract data directly from the image with a focus on high accuracy. If certain details are not explicitly printed, use your deep viticultural knowledge to provide the most technically accurate profile based on the producer's known cuvées.
+        The output MUST be valid JSON matching the schema. Do not include any markdown or conversational filler.`,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            name: { type: Type.STRING, description: "Full name of the wine" },
-            vintage: { type: Type.STRING, description: "Production year" },
-            region: { type: Type.STRING, description: "Wine region" },
+            name: { type: Type.STRING, description: "Full commercial name of the wine including producer" },
+            vintage: { type: Type.STRING, description: "Year of production (e.g., '2019')" },
+            region: { type: Type.STRING, description: "Detailed wine region (e.g., 'Pommard, Côte de Beaune, Burgundy')" },
             country: { type: Type.STRING, description: "Country of origin" },
-            rating: { type: Type.STRING, description: "Sommelier rating" },
-            abv: { type: Type.STRING, description: "Alcohol content" },
-            description: { type: Type.STRING, description: "Technical sommelier overview" },
-            grapesVariety: { type: Type.STRING, description: "Grape variety breakdown" },
+            rating: { type: Type.STRING, description: "Sommelier rating out of 100" },
+            abv: { type: Type.STRING, description: "Alcohol by volume percentage (e.g., '13.5%')" },
+            description: { type: Type.STRING, description: "A technical and sophisticated sommelier overview of the vintage and wine" },
+            grapesVariety: { type: Type.STRING, description: "Exact grape varieties or detailed blend percentages" },
             foodPairings: { 
               type: Type.ARRAY, 
               items: { type: Type.STRING },
-              description: "Food pairings"
+              description: "High-end gastronomic food pairings"
             },
-            judgmentPerception: { type: Type.STRING, description: "Definitive stylistic judgment" },
-            climate: { type: Type.STRING, description: "Terroir climate" },
-            tastingNotes: { type: Type.STRING, description: "Detailed flavor profile" },
-            soilStructure: { type: Type.STRING, description: "Soil composition" },
-            funFact: { type: Type.STRING, description: "Interesting viticultural fact" },
+            judgmentPerception: { type: Type.STRING, description: "A technical stylistic judgment of the wine's character and aging potential" },
+            climate: { type: Type.STRING, description: "Specific macro-climate conditions of the vineyard" },
+            tastingNotes: { type: Type.STRING, description: "Detailed organoleptic profile: aromas, palate weight, acidity, tannins, and finish" },
+            soilStructure: { type: Type.STRING, description: "Detailed geological composition of the vineyard terroir" },
+            funFact: { type: Type.STRING, description: "An obscure historical or technical detail about this specific wine or producer" },
           },
           required: [
             "name", "vintage", "region", "country", "rating", "abv", 
@@ -70,20 +66,15 @@ export async function analyzeWineImage(base64Image: string): Promise<WineDetails
     
     return JSON.parse(resultText) as WineDetails;
   } catch (error: any) {
-    console.error("Sommelier Service Error:", error);
+    console.error("Sommelier Intelligence Error:", error);
+    const errorMsg = error?.message || String(error);
     
-    // Check for rate limits / quota issues
-    const errorMessage = error.message || "";
-    const errorString = typeof error === 'string' ? error : JSON.stringify(error);
-    
-    if (error.status === 429 || errorString.includes("429") || errorString.includes("RESOURCE_EXHAUSTED")) {
+    if (errorMsg.includes("429") || errorMsg.includes("quota")) {
       throw new Error("QUOTA_EXHAUSTED");
     }
-
-    if (error.status === 401 || error.status === 403 || errorString.includes("API key")) {
+    if (errorMsg.includes("401") || errorMsg.includes("403")) {
       throw new Error("INVALID_KEY");
     }
-    
-    throw new Error(error.message || "SCAN_ERROR");
+    throw new Error("SCAN_ERROR");
   }
 }
