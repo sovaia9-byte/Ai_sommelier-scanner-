@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { analyzeWineImage } from './services/geminiService';
 import { WineDetails, AppState, UserStats } from './types';
@@ -7,6 +8,19 @@ import { Logo } from './components/Logo';
 import { SavedCollection } from './components/SavedCollection';
 
 const STORAGE_KEY = 'ai_sommelier_global_archive';
+
+// Define AIStudio interface for key management with a unique name to avoid global conflicts
+interface AIStudioInterface {
+  hasSelectedApiKey: () => Promise<boolean>;
+  openSelectKey: () => Promise<void>;
+}
+
+declare global {
+  interface Window {
+    // Removed readonly to ensure compatibility with other declarations of the window object
+    aistudio: AIStudioInterface;
+  }
+}
 
 const App: React.FC = () => {
   const [state, setState] = useState<AppState>('landing');
@@ -72,6 +86,18 @@ const App: React.FC = () => {
     setState('landing');
   }, []);
 
+  const handleStartScanner = async () => {
+    // Check for API key if not in environment
+    if (!process.env.API_KEY) {
+      const hasKey = await window.aistudio.hasSelectedApiKey();
+      if (!hasKey) {
+        await window.aistudio.openSelectKey();
+        // Proceeding after triggering selection as per instructions
+      }
+    }
+    setState('scanning');
+  };
+
   const handleCapture = useCallback(async () => {
     if (!videoRef.current || !canvasRef.current) return;
     const video = videoRef.current;
@@ -96,11 +122,17 @@ const App: React.FC = () => {
     } catch (err: any) {
       console.error("Processing Error:", err);
       let friendlyMessage = "Imperial sensor disruption. Ensure the label is clear and well-lit.";
-      if (err.message === "QUOTA_EXHAUSTED") {
-        friendlyMessage = "SYSTEM ALERT: Quota exceeded. Please check API settings.";
-      } else if (err.message === "INVALID_KEY") {
-        friendlyMessage = "AUTHORIZATION ERROR: Invalid API key detected.";
+      
+      if (err.message === "MISSING_API_KEY" || err.message === "INVALID_KEY") {
+        friendlyMessage = "AUTHORIZATION ERROR: A valid API key is required. Please ensure your project has billing enabled.";
+        // Reset key selection if invalid
+        if (typeof window.aistudio.openSelectKey === 'function') {
+           await window.aistudio.openSelectKey();
+        }
+      } else if (err.message === "QUOTA_EXHAUSTED") {
+        friendlyMessage = "SYSTEM ALERT: Quota exceeded. Please check your API usage limits.";
       }
+      
       setError(friendlyMessage);
       setState('error');
     }
@@ -140,11 +172,11 @@ const App: React.FC = () => {
           {/* Logo Section */}
           <div className="mb-12 relative flex justify-center">
             {/* Pulsing ruby glow behind logo */}
-            <div className="absolute inset-0 bg-[#9b111e]/20 blur-[80px] rounded-full scale-150 animate-pulse"></div>
+            <div className="absolute inset-0 bg-[#9b111e]/40 blur-[100px] rounded-full scale-150 animate-pulse"></div>
             <Logo className="w-32 h-32 relative z-10" />
           </div>
 
-          {/* AI SOMMELIER Typography - Smaller and Put Together */}
+          {/* AI SOMMELIER Typography */}
           <div className="text-center w-full max-w-xs select-none mb-10">
             <div className="flex flex-col items-center space-y-1">
               <div className="text-[#d4af37] text-[2.6rem] font-light tracking-[0.4em] mr-[-0.4em] leading-none uppercase">AI</div>
@@ -161,19 +193,30 @@ const App: React.FC = () => {
           {/* Action Area */}
           <div className="flex flex-col w-full max-w-[240px] space-y-10 items-center">
             <button 
-              onClick={() => setState('scanning')}
-              className="w-full bg-[#1a0507]/40 border border-[#d4af37]/20 hover:border-[#d4af37]/50 hover:bg-[#2d080a] rounded-full py-4 px-4 transition-all active:scale-95 shadow-[0_0_30px_rgba(0,0,0,0.7)] group relative overflow-hidden backdrop-blur-sm"
+              onClick={handleStartScanner}
+              className="w-full bg-[#2d080a]/30 border border-[#d4af37]/20 hover:border-[#d4af37]/50 hover:bg-[#4a0404]/40 rounded-full py-4 px-4 transition-all active:scale-95 shadow-[0_0_40px_rgba(74,4,4,0.3)] group relative overflow-hidden backdrop-blur-md"
             >
               <span className="text-[#d4af37] font-bold uppercase tracking-[0.25em] text-[11px]">START SCANNER</span>
             </button>
 
-            <button 
-              onClick={() => setState('collection')}
-              className="flex items-center space-x-2 text-[#d4af37]/50 hover:text-[#d4af37] transition-all uppercase tracking-[0.2em] text-[9px] font-bold"
-            >
-              <span>THE CELLAR ({stats.savedWines.length})</span>
-              <span className="text-sm opacity-40 leading-none">→</span>
-            </button>
+            <div className="flex flex-col items-center space-y-4">
+              <button 
+                onClick={() => setState('collection')}
+                className="flex items-center space-x-2 text-[#d4af37]/50 hover:text-[#d4af37] transition-all uppercase tracking-[0.2em] text-[9px] font-bold"
+              >
+                <span>THE CELLAR ({stats.savedWines.length})</span>
+                <span className="text-sm opacity-40 leading-none">→</span>
+              </button>
+              
+              <a 
+                href="https://ai.google.dev/gemini-api/docs/billing" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-[8px] uppercase tracking-[0.3em] text-white/30 hover:text-[#d4af37] transition-colors"
+              >
+                Billing Documentation
+              </a>
+            </div>
           </div>
         </div>
       )}
@@ -234,7 +277,7 @@ const App: React.FC = () => {
       )}
 
       {state === 'error' && (
-        <div className="flex flex-col items-center justify-center min-h-screen w-full p-10 text-center bg-[#0c0c0c] animate-in zoom-in duration-300">
+        <div className="flex flex-col items-center justify-center min-h-screen w-full p-10 text-center bg-ruby-radial animate-in zoom-in duration-300">
           <div className="w-24 h-24 bg-rose-950/20 border border-rose-600/30 rounded-full flex items-center justify-center text-rose-500 mb-10">
              <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -242,18 +285,30 @@ const App: React.FC = () => {
           </div>
           <div className="space-y-6 max-w-sm mb-12">
             <h2 className="text-3xl font-light uppercase tracking-[0.4em] text-[#d4af37]">System Alert</h2>
-            <div className="bg-rose-950/30 p-8 rounded-3xl border border-rose-600/10">
+            <div className="bg-rose-950/30 p-8 rounded-3xl border border-rose-600/10 backdrop-blur-md">
               <p className="text-rose-100/60 text-[11px] leading-relaxed uppercase tracking-[0.2em]">
                 {error || "Technical disruption in the Imperial sensor array."}
               </p>
             </div>
           </div>
-          <button 
-            onClick={resetApp}
-            className="w-full max-w-xs bg-[#1a080a] border border-[#d4af37]/40 text-[#d4af37] py-4 rounded-full font-bold uppercase tracking-[0.2em] text-[11px]"
-          >
-            Return to Dashboard
-          </button>
+          
+          <div className="flex flex-col w-full max-w-xs space-y-4">
+            <button 
+              onClick={resetApp}
+              className="w-full bg-[#2d080a] border border-[#d4af37]/40 text-[#d4af37] py-4 rounded-full font-bold uppercase tracking-[0.2em] text-[11px]"
+            >
+              Return to Dashboard
+            </button>
+            <button 
+              onClick={async () => {
+                await window.aistudio.openSelectKey();
+                resetApp();
+              }}
+              className="w-full bg-amber-500/10 border border-amber-500/20 text-amber-500 py-3 rounded-full font-bold uppercase tracking-[0.2em] text-[9px]"
+            >
+              Update API Key
+            </button>
+          </div>
         </div>
       )}
     </div>

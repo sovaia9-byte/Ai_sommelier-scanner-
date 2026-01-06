@@ -3,27 +3,33 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { WineDetails } from "../types";
 
 export async function analyzeWineImage(base64Image: string): Promise<WineDetails> {
-  // Fix: Initialize GoogleGenAI using process.env.API_KEY directly as per SDK guidelines
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = process.env.API_KEY;
+
+  // Improved error reporting for missing keys
+  if (!apiKey || apiKey === "" || apiKey === "undefined") {
+    console.error("Gemini API Key is missing. Ensure API_KEY is set in environment variables.");
+    throw new Error("MISSING_API_KEY");
+  }
+
+  // Always create a new instance to ensure we use the current environment's key
+  const ai = new GoogleGenAI({ apiKey });
   
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: [
-        {
-          parts: [
-            {
-              text: "You are a Master Sommelier. Analyze this wine label with 100% precision. Identify the exact producer, wine name, vintage year, sub-region, and grape varietal composition. Provide high-accuracy technical insights into the terroir soil geological structure, macro-climate conditions, and a definitive stylistic judgment. Return the results strictly as a JSON object."
+      model: "gemini-3-pro-preview",
+      contents: {
+        parts: [
+          {
+            text: "You are a Master Sommelier. Analyze this wine label with 100% precision. Identify the exact producer, wine name, vintage year, sub-region, and grape varietal composition. Provide high-accuracy technical insights into the terroir soil geological structure, macro-climate conditions, and a definitive stylistic judgment. Return the results strictly as a JSON object."
+          },
+          {
+            inlineData: {
+              mimeType: "image/jpeg",
+              data: base64Image,
             },
-            {
-              inlineData: {
-                mimeType: "image/jpeg",
-                data: base64Image,
-              },
-            },
-          ],
-        },
-      ],
+          },
+        ],
+      },
       config: {
         systemInstruction: `You are the AI Imperial Sommelier. Your task is to analyze wine labels with absolute precision. 
         Extract data directly from the image with a focus on high accuracy. If certain details are not explicitly printed, use your deep viticultural knowledge to provide the most technically accurate profile based on the producer's known cuvées.
@@ -69,11 +75,12 @@ export async function analyzeWineImage(base64Image: string): Promise<WineDetails
     console.error("Sommelier Intelligence Error:", error);
     const errorMsg = error?.message || String(error);
     
+    if (errorMsg.includes("Requested entity was not found.") || errorMsg.includes("401") || errorMsg.includes("403")) {
+      throw new Error("INVALID_KEY");
+    }
+    
     if (errorMsg.includes("429") || errorMsg.includes("quota")) {
       throw new Error("QUOTA_EXHAUSTED");
-    }
-    if (errorMsg.includes("401") || errorMsg.includes("403")) {
-      throw new Error("INVALID_KEY");
     }
     throw new Error("SCAN_ERROR");
   }
