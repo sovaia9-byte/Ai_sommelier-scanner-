@@ -5,11 +5,6 @@ import { WineDetails } from "../types";
 export async function analyzeWineImage(base64Image: string): Promise<WineDetails> {
   const apiKey = process.env.API_KEY;
 
-  // Improved error reporting for missing keys
-  if (!apiKey || apiKey === "" || apiKey === "undefined") {
-    console.error("Gemini API Key is missing. Ensure API_KEY is set in environment variables.");
-    throw new Error("MISSING_API_KEY");
-  }
 
   // Always create a new instance to ensure we use the current environment's key
   const ai = new GoogleGenAI({ apiKey });
@@ -74,13 +69,7 @@ export async function analyzeWineImage(base64Image: string): Promise<WineDetails
   } catch (error: any) {
     console.error("Sommelier Intelligence Error:", error);
     const errorMsg = error?.message || String(error);
-    
-    if (errorMsg.includes("Requested entity was not found.") || errorMsg.includes("401") || errorMsg.includes("403")) {
-      throw new Error("INVALID_KEY");
-    }
-    
-    if (errorMsg.includes("429") || errorMsg.includes("quota")) {
-      throw new Error("QUOTA_EXHAUSTED");
+
     }
     throw new Error("SCAN_ERROR");
   }
