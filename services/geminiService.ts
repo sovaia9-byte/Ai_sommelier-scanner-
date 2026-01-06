@@ -2,15 +2,11 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { WineDetails } from "../types";
 
 export async function analyzeWineImage(base64Image: string): Promise<WineDetails> {
+  // Always fetch the latest key from environment right before the call
   const apiKey = process.env.API_KEY;
 
-  // Check for the API key and provide a helpful link if it's missing
   if (!apiKey || apiKey === "" || apiKey === "undefined") {
-    console.error("CRITICAL: API_KEY is missing.");
-    throw new Error(
-      "CONFIGURATION ERROR: The Imperial API Key is missing. " +
-      "Get a free Gemini API Key from aistudio.google.com, add it to Vercel as 'API_KEY', and Re-Deploy."
-    );
+    throw new Error("MISSING_KEY");
   }
 
   const ai = new GoogleGenAI({ apiKey });
@@ -70,16 +66,24 @@ export async function analyzeWineImage(base64Image: string): Promise<WineDetails
     });
 
     const resultText = response.text;
-    if (!resultText) throw new Error("Empty response from Imperial Archives.");
+    if (!resultText) throw new Error("EMPTY_RESPONSE");
     
     return JSON.parse(resultText) as WineDetails;
   } catch (error: any) {
-    console.error("Sommelier Service Error Details:", error);
+    console.error("Sommelier Service Error:", error);
     
-    if (error.status === 401 || error.status === 403) {
-      throw new Error("AUTHENTICATION ERROR: Your API Key is invalid or restricted.");
+    // Check for rate limits / quota issues
+    const errorMessage = error.message || "";
+    const errorString = typeof error === 'string' ? error : JSON.stringify(error);
+    
+    if (error.status === 429 || errorString.includes("429") || errorString.includes("RESOURCE_EXHAUSTED")) {
+      throw new Error("QUOTA_EXHAUSTED");
+    }
+
+    if (error.status === 401 || error.status === 403 || errorString.includes("API key")) {
+      throw new Error("INVALID_KEY");
     }
     
-    throw new Error(error.message || "SCAN ERROR: The Imperial core encountered a sensor disruption.");
+    throw new Error(error.message || "SCAN_ERROR");
   }
 }
