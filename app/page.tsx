@@ -1,12 +1,14 @@
 
+'use client';
+
 // @google/genai guidelines followed: Using property access for response.text and correct initialization.
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { analyzeWineImage } from './services/geminiService';
-import { WineDetails, AppState, UserStats } from './types';
-import { ScannerOverlay } from './components/ScannerOverlay';
-import { WineResult } from './components/WineResult';
-import { Logo } from './components/Logo';
-import { SavedCollection } from './components/SavedCollection';
+import { analyzeWineImage } from '../services/geminiService';
+import { WineDetails, AppState, UserStats } from '../types';
+import { ScannerOverlay } from '../components/ScannerOverlay';
+import { WineResult } from '../components/WineResult';
+import { Logo } from '../components/Logo';
+import { SavedCollection } from '../components/SavedCollection';
 
 const STORAGE_KEY = 'ai_sommelier_global_archive';
 
@@ -23,27 +25,31 @@ declare global {
   }
 }
 
-const App: React.FC = () => {
+export default function Home() {
   const [state, setState] = useState<AppState>('landing');
   const [wineDetails, setWineDetails] = useState<WineDetails | null>(null);
   const [error, setError] = useState<string | null>(null);
   
-  const [stats, setStats] = useState<UserStats>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.warn("Storage access failed", e);
-    }
-    return { savedWines: [] };
-  });
+  const [stats, setStats] = useState<UserStats>({ savedWines: [] });
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Initialize stats from localStorage on mount
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(stats));
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) setStats(JSON.parse(saved));
+    } catch (e) {
+      console.warn("Storage access failed", e);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (stats.savedWines.length > 0) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(stats));
+    }
   }, [stats]);
 
   useEffect(() => {
@@ -88,12 +94,12 @@ const App: React.FC = () => {
   }, []);
 
   const handleStartScanner = async () => {
-    // Check for API key if not in environment
     if (!process.env.API_KEY) {
-      const hasKey = await window.aistudio.hasSelectedApiKey();
-      if (!hasKey) {
-        await window.aistudio.openSelectKey();
-        // Proceeding after triggering selection as per instructions
+      if (window.aistudio) {
+        const hasKey = await window.aistudio.hasSelectedApiKey();
+        if (!hasKey) {
+          await window.aistudio.openSelectKey();
+        }
       }
     }
     setState('scanning');
@@ -125,9 +131,8 @@ const App: React.FC = () => {
       let friendlyMessage = "Imperial sensor disruption. Ensure the label is clear and well-lit.";
       
       if (err.message === "MISSING_API_KEY" || err.message === "INVALID_KEY") {
-        friendlyMessage = "AUTHORIZATION ERROR: A valid API key is required. Please ensure your project has billing enabled.";
-        // Reset key selection if invalid
-        if (typeof window.aistudio.openSelectKey === 'function') {
+        friendlyMessage = "AUTHORIZATION ERROR: A valid API key is required. Check Vercel Environment Variables.";
+        if (window.aistudio && typeof window.aistudio.openSelectKey === 'function') {
            await window.aistudio.openSelectKey();
         }
       } else if (err.message === "QUOTA_EXHAUSTED") {
@@ -170,28 +175,22 @@ const App: React.FC = () => {
 
       {state === 'landing' && (
         <div className="flex flex-col items-center justify-center w-full h-full p-8 animate-in fade-in duration-1000">
-          {/* Logo Section */}
           <div className="mb-12 relative flex justify-center">
-            {/* Pulsing ruby glow behind logo */}
             <div className="absolute inset-0 bg-[#9b111e]/40 blur-[100px] rounded-full scale-150 animate-pulse"></div>
             <Logo className="w-32 h-32 relative z-10" />
           </div>
 
-          {/* AI SOMMELIER Typography */}
           <div className="text-center w-full max-w-xs select-none mb-10">
             <div className="flex flex-col items-center space-y-1">
               <div className="text-[#d4af37] text-[2.6rem] font-light tracking-[0.4em] mr-[-0.4em] leading-none uppercase">AI</div>
               <div className="text-[#d4af37] text-[1.6rem] font-light tracking-[0.25em] mr-[-0.25em] uppercase leading-none">SOMMELIER</div>
             </div>
-            
             <div className="relative flex items-center justify-center w-full mt-7 mb-4">
               <div className="h-[0.5px] w-24 bg-gradient-to-r from-transparent via-[#d4af37]/20 to-transparent"></div>
             </div>
-            
             <p className="text-[#b25c6c] font-medium tracking-[0.3em] uppercase text-[8px] opacity-80">IMPERIAL VITICULTURE PROTOCOL</p>
           </div>
 
-          {/* Action Area */}
           <div className="flex flex-col w-full max-w-[240px] space-y-10 items-center">
             <button 
               onClick={handleStartScanner}
@@ -208,7 +207,6 @@ const App: React.FC = () => {
                 <span>THE CELLAR ({stats.savedWines.length})</span>
                 <span className="text-sm opacity-40 leading-none">→</span>
               </button>
-              
               <a 
                 href="https://ai.google.dev/gemini-api/docs/billing" 
                 target="_blank" 
@@ -232,7 +230,6 @@ const App: React.FC = () => {
             className={`absolute inset-0 w-full h-full object-cover ${state !== 'scanning' ? 'opacity-0' : 'opacity-100'} transition-opacity duration-700`}
           />
           <canvas ref={canvasRef} className="hidden" />
-          
           <ScannerOverlay 
             state={state}
             onCapture={handleCapture}
@@ -240,7 +237,6 @@ const App: React.FC = () => {
             onOpenCollection={() => setState('collection')}
             isLoading={state === 'loading'}
           />
-
           {state === 'loading' && (
             <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/95 backdrop-blur-3xl">
               <Logo className="w-24 h-24 mb-10 animate-pulse" />
@@ -292,7 +288,6 @@ const App: React.FC = () => {
               </p>
             </div>
           </div>
-          
           <div className="flex flex-col w-full max-w-xs space-y-4">
             <button 
               onClick={resetApp}
@@ -302,7 +297,7 @@ const App: React.FC = () => {
             </button>
             <button 
               onClick={async () => {
-                await window.aistudio.openSelectKey();
+                if (window.aistudio) await window.aistudio.openSelectKey();
                 resetApp();
               }}
               className="w-full bg-amber-500/10 border border-amber-500/20 text-amber-500 py-3 rounded-full font-bold uppercase tracking-[0.2em] text-[9px]"
@@ -314,6 +309,4 @@ const App: React.FC = () => {
       )}
     </div>
   );
-};
-
-export default App;
+}

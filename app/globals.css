@@ -1,0 +1,48 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #0c0c0c;
+  --foreground: #ffffff;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bg-ruby-radial {
+  background: radial-gradient(circle at 50% 40%, #4a0404 0%, #1a0505 60%, #0c0c0c 100%);
+}
+
+@keyframes scan-line {
+  0% { transform: translateY(-100vh); }
+  100% { transform: translateY(100vh); }
+}
+
+.scanner-line {
+  height: 2px;
+  width: 100%;
+  background: linear-gradient(to right, transparent, #e11d48, transparent);
+  box-shadow: 0 0 15px 2px #e11d48;
+  position: absolute;
+  z-index: 20;
+  animation: scan-line 3s linear infinite;
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: #0c0c0c;
+}
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 10px;
+}
